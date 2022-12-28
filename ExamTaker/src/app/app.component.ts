@@ -13,32 +13,62 @@ enum AnswerResult {
   styleUrls: ['./app.component.scss'],
 })
 export class AppComponent {
-  private static endpointUrl: string = 'api/Question';
+  private static questionEndpointUrl: string = 'api/Question';
+  private static userAnswerEndpointUrl: string = 'api/UserAnswer';
+  private static sessionEndpointUrl: string = 'api/Session';
   questions: Question[] = [];
-  question!: Question;
-  questionId: number = 0;
+  question: Question = {
+    QuestionNumber: 1,
+    Id: '',
+    Text: [],
+    AnswerNotes: [],
+    Answers: [],
+  };
   percentageCorrect(): number {
     return (
-      this.correctAnswers /
-      (this.questionId == 1 ? 1 : this.questionId - 1)
+      this.session.CorrectAnswers /
+      (this.session.QuestionNumber == 1 ? 1 : this.session.QuestionNumber - 1)
     );
   }
-
+  session: Session = {
+    Id: '',
+    SessionNumber: 1,
+    QuestionNumber: 0,
+    CorrectAnswers: 0,
+  };
   answerResult: AnswerResult = AnswerResult.None;
   AnswerResultType = AnswerResult;
-  correctAnswers: number = 0;
 
   constructor(private readonly api: ApiService) {
-    this.api.getAll<Question>(AppComponent.endpointUrl).subscribe((r) => {
-      this.questions = r;
-      this.NextQuestion();
-    });
+    this.api
+      .getAll<Session>(AppComponent.sessionEndpointUrl)
+      .subscribe((sessions) => {
+        if (sessions.length > 0) {
+          sessions.sort((s1, s2) => s2.SessionNumber - s1.SessionNumber);
+          this.session = sessions[0];
+        } else {
+          this.api
+            .post(AppComponent.sessionEndpointUrl, this.session)
+            .subscribe((r) => (this.session = r));
+        }
+
+        this.api
+          .getAll<Question>(AppComponent.questionEndpointUrl)
+          .subscribe((r) => {
+            this.questions = r;
+            this.NextQuestion();
+          });
+      });
   }
 
   NextQuestion() {
+    this.api
+      .put(AppComponent.sessionEndpointUrl, this.session)
+      .subscribe((r) => {});
+
     this.answerResult = AnswerResult.None;
-    this.questionId++;
-    this.question = this.questions[this.questionId];
+    this.session.QuestionNumber++;
+    this.question = this.questions[this.session.QuestionNumber];
     this.question.Answers.forEach((a) => (a.selected = false));
   }
 
@@ -53,20 +83,47 @@ export class AppComponent {
     }
   }
 
-  CheckAnswers() {
-    let incorrectAnswers = this.question.Answers.filter(
-      (a) => a.selected != a.IsCorrect
-    ).length;
+  NewSession() {
+    var newSession: Session = {
+      Id: '',
+      SessionNumber: this.session.SessionNumber + 1,
+      QuestionNumber: 0,
+      CorrectAnswers: 0,
+    };
 
-    if (!incorrectAnswers) {
+    this.api
+      .post(AppComponent.sessionEndpointUrl, newSession)
+      .subscribe((r) => {
+        this.session = r;
+        this.NextQuestion();
+      });
+  }
+
+  CheckAnswers() {
+    let userAnswer: UserAnswer = {
+      Id: '',
+      QuestionNumber: this.question.QuestionNumber,
+      Answers: this.question.Answers.filter((q) => q.selected).map(
+        (s) => s.AnswerLetter
+      ),
+      IsCorrect:
+        this.question.Answers.filter((a) => a.selected != a.IsCorrect).length ==
+        0,
+    };
+
+    if (userAnswer.IsCorrect) {
       this.answerResult = AnswerResult.Correct;
-      this.correctAnswers++;
+      this.session.CorrectAnswers++;
       setTimeout(() => {
         this.NextQuestion();
       }, 2000);
     } else {
       this.answerResult = AnswerResult.Wrong;
     }
+
+    this.api
+      .post(AppComponent.userAnswerEndpointUrl, userAnswer)
+      .subscribe((r) => {});
   }
 }
 
@@ -83,4 +140,18 @@ interface Answer {
   Text: string;
   IsCorrect: boolean;
   selected: boolean;
+}
+
+interface UserAnswer {
+  Id: string;
+  QuestionNumber: number;
+  Answers: string[];
+  IsCorrect: boolean;
+}
+
+interface Session {
+  Id: string;
+  SessionNumber: number;
+  QuestionNumber: number;
+  CorrectAnswers: number;
 }

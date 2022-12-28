@@ -47,6 +47,8 @@ namespace ExamAPI
         private static void Setup(WebApplicationBuilder builder)
         {
             builder.Services.AddSingleton<DBService<Question>>();
+            builder.Services.AddSingleton<DBService<UserAnswer>>();
+            builder.Services.AddSingleton<DBService<Session>>();
 
             builder.Services.AddControllers().AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = null);
         }

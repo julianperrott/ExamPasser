@@ -28,18 +28,19 @@ public abstract class AppController<T> : ControllerBase where T : class, IDataAc
     }
 
     [HttpPost]
-    public virtual async Task<IActionResult> Post(T newDog)
+    public virtual async Task<IActionResult> Post(T item)
     {
-        newDog.Id = string.Empty;
+        item.Id = string.Empty;
 
-        await _dbService.CreateAsync(newDog);
+        await _dbService.CreateAsync(item);
 
-        return CreatedAtAction(nameof(Get), new { id = newDog.Id }, newDog);
+        return CreatedAtAction(nameof(Get), new { id = item.Id }, item);
     }
 
-    [HttpPut("{id:length(24)}")]
-    public virtual async Task<IActionResult> Update(string id, T updatedDog)
+    [HttpPut()]
+    public virtual async Task<IActionResult> Update(T updatedItem)
     {
+        string id = updatedItem.Id;
         var item = await _dbService.GetAsync(id);
 
         if (item is null)
@@ -47,9 +48,9 @@ public abstract class AppController<T> : ControllerBase where T : class, IDataAc
             return NotFound();
         }
 
-        updatedDog.Id = item.Id;
+        updatedItem.Id = item.Id;
 
-        await _dbService.UpdateAsync(id, updatedDog);
+        await _dbService.UpdateAsync(id, updatedItem);
 
         return NoContent();
     }

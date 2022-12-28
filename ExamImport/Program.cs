@@ -8,16 +8,16 @@ namespace ExamImport
     {
         private static async Task Main(string[] args)
         {
-            var dbService = new DBService<Question>();
+            //var dbService = new DBService<Question>();
 
-            var lines = File.ReadAllLines(@"C:\Users\jpe190\Desktop\DVA-C01V23.0.txt");
-            var questionLines = splitIntoNumberedQuestions(lines);
-            var questions = questionLines.Select(ToQuestionLine).ToList();
+            //var lines = File.ReadAllLines(@"C:\Users\jpe190\Desktop\DVA-C01V23.0.txt");
+            //var questionLines = splitIntoNumberedQuestions(lines);
+            //var questions = questionLines.Select(ToQuestionLine).ToList();
 
-            string jsonString = JsonSerializer.Serialize(questions);
-            File.WriteAllText(@"c:\temp\questions.json", jsonString);
+            //string jsonString = JsonSerializer.Serialize(questions);
+            //File.WriteAllText(@"c:\temp\questions.json", jsonString);
 
-            foreach (var question in questions) { await dbService.CreateAsync(question); }
+            //foreach (var question in questions) { await dbService.CreateAsync(question); }
         }
 
         private static Question ToQuestionLine(NumberedQuestion numberedQuestion)
